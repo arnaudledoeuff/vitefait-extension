@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 220px;
+      font-family: system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      padding: 16px;
+    }
+    .logo {
+      font-size: 13px;
+      font-weight: 700;
+      color: #a78bfa;
+      margin-bottom: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+    #btn-start { background: #7c3aed; color: #fff; }
+    #btn-stop  { background: #ef4444; color: #fff; display: none; }
+    #status {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #71717a;
+      text-align: center;
+    }
+    #status.error { color: #f87171; }
+  </style>
+</head>
+<body>
+  <div class="logo">⬛ vitefait.io</div>
+  <button id="btn-start">● Démarrer l'enregistrement</button>
+  <button id="btn-stop">■ Arrêter l'enregistrement</button>
+  <p id="status">Ouvre vitefait.io pour commencer</p>
+  <script src="popup.js"></script>
+</body>
+</html>
