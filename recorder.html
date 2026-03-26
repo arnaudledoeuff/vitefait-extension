@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 280px;
+      font-family: system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      padding: 20px;
+      user-select: none;
+    }
+    .logo { font-size: 12px; font-weight: 700; color: #a78bfa; margin-bottom: 14px; }
+    button {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #btn-start { background: #7c3aed; color: #fff; }
+    #btn-stop  { background: #ef4444; color: #fff; display: none; }
+    .status { margin-top: 10px; font-size: 11px; color: #71717a; text-align: center; min-height: 16px; }
+    .status.error   { color: #f87171; }
+    .status.success { color: #4ade80; }
+    .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ef4444; animation: pulse 1s infinite; margin-right: 5px; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  </style>
+</head>
+<body>
+  <div class="logo">⬛ vitefait.io — Enregistreur</div>
+  <button id="btn-start">● Démarrer l'enregistrement</button>
+  <button id="btn-stop">■ Arrêter</button>
+  <p id="status" class="status">Prêt</p>
+  <script src="recorder.js"></script>
+</body>
+</html>
