@@ -5,6 +5,10 @@ const btnStart = document.getElementById('btn-start')
 const btnStop  = document.getElementById('btn-stop')
 const status   = document.getElementById('status')
 
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'STOP') stopRecording()
+})
+
 let mediaRecorder = null
 let chunks        = []
 
@@ -27,9 +31,11 @@ btnStart.addEventListener('click', async () => {
 
     stream.getVideoTracks()[0].onended = () => stopRecording()
 
+    chrome.runtime.sendMessage({ type: 'RECORDING_STARTED' })
+
     btnStart.style.display = 'none'
     btnStop.style.display  = 'block'
-    setStatus('<span class="dot"></span> En cours — tu peux minimiser cette fenêtre')
+    setStatus('<span class="dot"></span> En cours — clique l\'icône pour arrêter')
   } catch (err) {
     setStatus(err.name === 'NotAllowedError' ? 'Capture annulée' : err.message, 'error')
   }
@@ -95,6 +101,7 @@ async function handleStop() {
     })
     if (!dbRes.ok) throw new Error(`DB échouée (${dbRes.status})`)
 
+    chrome.runtime.sendMessage({ type: 'RECORDING_STOPPED' })
     setStatus('✓ Vidéo sauvegardée !', 'success')
     chunks = []
     setTimeout(() => window.close(), 2000)
