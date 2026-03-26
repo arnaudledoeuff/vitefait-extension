@@ -48,7 +48,6 @@ btnStart.addEventListener('click', () => {
     width:  300,
     height: 160,
   })
-  window.close()
 })
 
 // ── Logout ─────────────────────────────────────────────────────────────────
