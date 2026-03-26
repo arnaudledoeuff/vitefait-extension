@@ -110,7 +110,10 @@ async function handleStop() {
         body: blob,
       }
     )
-    if (!uploadRes.ok) throw new Error(`Upload échoué (${uploadRes.status})`)
+    if (!uploadRes.ok) {
+      const errBody = await uploadRes.json().catch(() => ({}))
+      throw new Error(`Upload ${uploadRes.status}: ${errBody.message || errBody.error || JSON.stringify(errBody)}`)
+    }
 
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/recordings/${fileName}`
 
