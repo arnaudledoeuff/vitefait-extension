@@ -2,11 +2,11 @@
 let lastSample = 0
 
 document.addEventListener('mousemove', (e) => {
-  const now = Date.now()
-  if (now - lastSample < 100) return
-  lastSample = now
-  if (!chrome?.runtime?.id) return
   try {
+    const now = Date.now()
+    if (now - lastSample < 100) return
+    lastSample = now
+    if (typeof chrome === 'undefined' || !chrome.runtime?.id) return
     chrome.runtime.sendMessage({
       type: 'MOUSE',
       x: e.screenX / screen.width,
