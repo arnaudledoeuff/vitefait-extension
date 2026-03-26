@@ -18,8 +18,16 @@ async function startCapture(streamId) {
   chunks = []
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: streamId } },
-      audio: { mandatory: { chromeMediaSource: 'desktop' } },
+      video: {
+        mandatory: {
+          chromeMediaSource:   'desktop',
+          chromeMediaSourceId: streamId,
+          maxWidth:            1920,
+          maxHeight:           1080,
+          maxFrameRate:        30,
+        },
+      },
+      audio: false,
     })
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
       ? 'video/webm;codecs=vp9' : 'video/webm'
