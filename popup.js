@@ -12,10 +12,15 @@ const btnStop         = document.getElementById('btn-stop')
 const recStatus       = document.getElementById('rec-status')
 const btnLogout       = document.getElementById('btn-logout')
 const userEmailEl     = document.getElementById('user-email')
+const warning         = document.getElementById('warning')
 
-// ── Init : vérifie si déjà connecté ────────────────────────────────────────
-chrome.storage.local.get(['session'], ({ session }) => {
-  if (session?.access_token) showRecordingScreen(session)
+let mediaRecorder = null
+let chunks        = []
+let session       = null
+
+// ── Init ───────────────────────────────────────────────────────────────────
+chrome.storage.local.get(['session'], (result) => {
+  if (result.session?.access_token) showRecordingScreen(result.session)
 })
 
 // ── Login ──────────────────────────────────────────────────────────────────
@@ -27,79 +32,128 @@ btnLogin.addEventListener('click', async () => {
   btnLogin.disabled = true
   setStatus(loginStatus, 'Connexion…')
 
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+  const res  = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },
     body: JSON.stringify({ email, password }),
   })
   const data = await res.json()
   btnLogin.disabled = false
 
-  if (!res.ok) { setStatus(loginStatus, data.error_description || 'Erreur de connexion', 'error'); return }
+  if (!res.ok) { setStatus(loginStatus, data.error_description || 'Erreur', 'error'); return }
 
   chrome.storage.local.set({ session: data })
   showRecordingScreen(data)
-  // Pré-créer l'offscreen dès la connexion pour qu'il soit prêt
-  chrome.runtime.sendMessage({ type: 'PREPARE_OFFSCREEN' })
 })
 
-// ── Start recording ────────────────────────────────────────────────────────
-btnStart.addEventListener('click', () => {
+// ── Start ──────────────────────────────────────────────────────────────────
+btnStart.addEventListener('click', async () => {
   setStatus(recStatus, 'Sélectionne une fenêtre…')
-  // chooseDesktopMedia doit être appelé depuis le popup, pas le service worker
-  chrome.desktopCapture.chooseDesktopMedia(['screen', 'window', 'tab'], (streamId) => {
-    if (!streamId) { setStatus(recStatus, 'Capture annulée'); return }
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: 'always' },
+      audio: true,
+    })
+
+    chunks = []
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      ? 'video/webm;codecs=vp9' : 'video/webm'
+    mediaRecorder = new MediaRecorder(stream, { mimeType })
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data) }
+    mediaRecorder.onstop = handleStop
+    mediaRecorder.start(1000)
+
+    stream.getVideoTracks()[0].onended = () => stopRecording()
+
     btnStart.style.display = 'none'
     btnStop.style.display  = 'block'
+    warning.style.display  = 'block'
     setStatus(recStatus, '⬤ En cours…')
-    chrome.runtime.sendMessage({ type: 'START_RECORDING', streamId })
-  })
-})
-
-// ── Stop recording ─────────────────────────────────────────────────────────
-btnStop.addEventListener('click', () => {
-  btnStop.disabled = true
-  setStatus(recStatus, 'Upload en cours…')
-  chrome.runtime.sendMessage({ type: 'STOP_RECORDING' }, (res) => {
-    btnStop.disabled       = false
-    btnStart.style.display = 'block'
-    btnStop.style.display  = 'none'
-    if (res?.error) setStatus(recStatus, res.error, 'error')
-    else setStatus(recStatus, '✓ Vidéo sauvegardée !', 'success')
-  })
-})
-
-// ── Pré-créer l'offscreen si déjà connecté au démarrage ───────────────────
-chrome.storage.local.get(['session'], ({ session }) => {
-  if (session?.access_token) chrome.runtime.sendMessage({ type: 'PREPARE_OFFSCREEN' })
-})
-
-// ── Erreurs depuis background ──────────────────────────────────────────────
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === 'SHOW_ERROR') {
-    setStatus(recStatus, msg.error, 'error')
-    btnStart.style.display = 'block'
-    btnStop.style.display  = 'none'
+  } catch (err) {
+    setStatus(recStatus, err.message === 'Permission denied' ? 'Capture annulée' : err.message, 'error')
   }
 })
+
+// ── Stop ───────────────────────────────────────────────────────────────────
+btnStop.addEventListener('click', () => stopRecording())
+
+function stopRecording() {
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') return
+  mediaRecorder.stop()
+  mediaRecorder.stream.getTracks().forEach(t => t.stop())
+  btnStop.style.display  = 'none'
+  btnStart.style.display = 'block'
+  warning.style.display  = 'none'
+  setStatus(recStatus, 'Upload en cours…')
+}
+
+// ── Upload ─────────────────────────────────────────────────────────────────
+async function handleStop() {
+  const result = await chrome.storage.local.get(['session'])
+  session = result.session
+  if (!session?.access_token) { setStatus(recStatus, 'Non connecté', 'error'); return }
+
+  try {
+    const blob     = new Blob(chunks, { type: 'video/webm' })
+    const ts       = Date.now()
+    const fileName = `${session.user.id}/${ts}.webm`
+
+    const uploadRes = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/recordings/${fileName}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization:  `Bearer ${session.access_token}`,
+          apikey:          SUPABASE_ANON_KEY,
+          'Content-Type': 'video/webm',
+        },
+        body: blob,
+      }
+    )
+    if (!uploadRes.ok) throw new Error(`Upload échoué (${uploadRes.status})`)
+
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/recordings/${fileName}`
+
+    const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/videos`, {
+      method: 'POST',
+      headers: {
+        Authorization:  `Bearer ${session.access_token}`,
+        apikey:          SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        Prefer:          'return=minimal',
+      },
+      body: JSON.stringify({
+        user_id:    session.user.id,
+        title:      `Enregistrement ${new Date().toLocaleString('fr-FR')}`,
+        url:        publicUrl,
+        created_at: new Date().toISOString(),
+      }),
+    })
+    if (!dbRes.ok) throw new Error(`DB échouée (${dbRes.status})`)
+
+    setStatus(recStatus, '✓ Vidéo sauvegardée !', 'success')
+    chunks = []
+  } catch (err) {
+    setStatus(recStatus, err.message, 'error')
+  }
+}
 
 // ── Logout ─────────────────────────────────────────────────────────────────
 btnLogout.addEventListener('click', () => {
   chrome.storage.local.remove('session')
   screenRecording.style.display = 'none'
   screenLogin.style.display     = 'block'
-  setStatus(loginStatus, '')
 })
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-function showRecordingScreen(session) {
+function showRecordingScreen(s) {
+  session = s
   screenLogin.style.display     = 'none'
   screenRecording.style.display = 'block'
-  userEmailEl.textContent       = session.user?.email || ''
-  chrome.storage.local.set({ session })
+  userEmailEl.textContent       = s.user?.email || ''
 }
 
 function setStatus(el, msg, type = '') {
-  el.innerHTML   = msg
+  el.textContent = msg
   el.className   = 'status ' + type
 }

@@ -36,29 +36,22 @@
     }
     button:hover { opacity: 0.85; }
     button:disabled { opacity: 0.4; cursor: not-allowed; }
-    #btn-login   { background: #7c3aed; color: #fff; }
-    #btn-start   { background: #7c3aed; color: #fff; }
-    #btn-stop    { background: #ef4444; color: #fff; }
-    #btn-logout  { background: transparent; border: 1px solid #333; color: #71717a; margin-top: 8px; font-size: 11px; padding: 6px; }
-    .status {
-      margin-top: 10px;
-      font-size: 11px;
-      color: #71717a;
-      text-align: center;
-    }
+    #btn-login  { background: #7c3aed; color: #fff; }
+    #btn-start  { background: #7c3aed; color: #fff; }
+    #btn-stop   { background: #ef4444; color: #fff; display: none; }
+    #btn-logout { background: transparent; border: 1px solid #333; color: #71717a; margin-top: 8px; font-size: 11px; padding: 6px; }
+    .status { margin-top: 10px; font-size: 11px; color: #71717a; text-align: center; }
     .status.error   { color: #f87171; }
     .status.success { color: #4ade80; }
     .user-email { font-size: 11px; color: #52525b; margin-bottom: 12px; }
-    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: pulse 1s infinite; margin-right: 6px; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    #screen-login    { display: block; }
+    .warning { font-size: 10px; color: #854d0e; background: #422006; border: 1px solid #92400e; border-radius: 6px; padding: 6px 8px; margin-top: 8px; display: none; }
+    #screen-login     { display: block; }
     #screen-recording { display: none; }
   </style>
 </head>
 <body>
   <div class="logo">⬛ vitefait.io</div>
 
-  <!-- Écran login -->
   <div id="screen-login">
     <input id="email"    type="email"    placeholder="Email" />
     <input id="password" type="password" placeholder="Mot de passe" />
@@ -66,11 +59,11 @@
     <p id="login-status" class="status"></p>
   </div>
 
-  <!-- Écran enregistrement -->
   <div id="screen-recording">
     <p id="user-email" class="user-email"></p>
     <button id="btn-start">● Démarrer l'enregistrement</button>
-    <button id="btn-stop" style="display:none">■ Arrêter</button>
+    <button id="btn-stop">■ Arrêter</button>
+    <div id="warning" class="warning">⚠ Ne ferme pas ce popup pendant l'enregistrement</div>
     <p id="rec-status" class="status"></p>
     <button id="btn-logout">Déconnexion</button>
   </div>
