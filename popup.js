@@ -1,4 +1,3 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js'
 
 const screenLogin     = document.getElementById('screen-login')
 const screenRecording = document.getElementById('screen-recording')

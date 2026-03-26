@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js'
+importScripts('config.js')
 
 let mouseTrack    = []
 let recordingStart = null
