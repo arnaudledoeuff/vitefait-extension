@@ -3,8 +3,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 let mouseTrack     = []
 let recordingStart = null
+let pendingStreamId = null   // streamId en attente que l'offscreen soit prêt
 
-// ── Messages depuis popup et offscreen ────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'START_RECORDING') {
     startRecording(msg.streamId)
@@ -12,6 +12,17 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'STOP_RECORDING') {
     stopRecording(sendResponse)
     return true
+  }
+  if (msg.type === 'OFFSCREEN_READY') {
+    // L'offscreen est prêt — envoyer le streamId maintenant
+    if (pendingStreamId) {
+      chrome.runtime.sendMessage({ type: 'OFFSCREEN_START', streamId: pendingStreamId })
+      pendingStreamId = null
+    }
+  }
+  if (msg.type === 'CAPTURE_ERROR') {
+    // Propager l'erreur au popup
+    chrome.runtime.sendMessage({ type: 'SHOW_ERROR', error: msg.error })
   }
   if (msg.type === 'MOUSE' && recordingStart !== null) {
     mouseTrack.push({
@@ -26,22 +37,20 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 async function startRecording(streamId) {
   mouseTrack     = []
   recordingStart = Date.now()
+  pendingStreamId = streamId
   await ensureOffscreen()
-  // Attendre que l'offscreen soit prêt avant d'envoyer le streamId
-  setTimeout(() => {
-    chrome.runtime.sendMessage({ type: 'OFFSCREEN_START', streamId })
-  }, 500)
+  // OFFSCREEN_START sera envoyé quand l'offscreen envoie OFFSCREEN_READY
 }
 
 // ── Stop ──────────────────────────────────────────────────────────────────
 async function stopRecording(sendResponse) {
-  const result = await chrome.storage.local.get(['session'])
+  const result  = await chrome.storage.local.get(['session'])
   const session = result.session
   if (!session?.access_token) { sendResponse({ error: 'Non connecté' }); return }
 
   chrome.runtime.sendMessage({ type: 'OFFSCREEN_STOP' }, async (res) => {
     if (chrome.runtime.lastError || !res?.buffer) {
-      sendResponse({ error: 'Pas de données vidéo' }); return
+      sendResponse({ error: res?.error || 'Pas de données vidéo' }); return
     }
     try {
       const blob     = new Blob([new Uint8Array(res.buffer)], { type: 'video/webm' })
@@ -60,7 +69,7 @@ async function stopRecording(sendResponse) {
           body: blob,
         }
       )
-      if (!uploadRes.ok) throw new Error('Erreur upload Storage')
+      if (!uploadRes.ok) throw new Error(`Upload échoué (${uploadRes.status})`)
 
       const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/recordings/${fileName}`
 
@@ -80,7 +89,7 @@ async function stopRecording(sendResponse) {
           created_at:  new Date().toISOString(),
         }),
       })
-      if (!dbRes.ok) throw new Error('Erreur base de données')
+      if (!dbRes.ok) throw new Error(`DB échouée (${dbRes.status})`)
 
       recordingStart = null
       mouseTrack     = []
@@ -95,11 +104,15 @@ async function stopRecording(sendResponse) {
 async function ensureOffscreen() {
   try {
     await chrome.offscreen.createDocument({
-      url:         'offscreen.html',
-      reasons:     ['USER_MEDIA'],
-      justification: 'Capture écran',
+      url:           'offscreen.html',
+      reasons:       ['USER_MEDIA'],
+      justification: 'Capture écran via getDisplayMedia',
     })
   } catch (e) {
-    // Déjà créé, on ignore
+    // Déjà créé — envoyer le streamId directement
+    if (pendingStreamId) {
+      chrome.runtime.sendMessage({ type: 'OFFSCREEN_START', streamId: pendingStreamId })
+      pendingStreamId = null
+    }
   }
 }

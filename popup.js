@@ -67,6 +67,15 @@ btnStop.addEventListener('click', () => {
   })
 })
 
+// ── Erreurs depuis background ──────────────────────────────────────────────
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'SHOW_ERROR') {
+    setStatus(recStatus, msg.error, 'error')
+    btnStart.style.display = 'block'
+    btnStop.style.display  = 'none'
+  }
+})
+
 // ── Logout ─────────────────────────────────────────────────────────────────
 btnLogout.addEventListener('click', () => {
   chrome.storage.local.remove('session')
