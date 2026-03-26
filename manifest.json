@@ -1,13 +1,15 @@
 {
   "manifest_version": 3,
   "name": "vitefait.io — Screen Recorder",
-  "version": "1.0.0",
-  "description": "Démarre et arrête tes enregistrements vitefait.io depuis n'importe quel onglet.",
-  "permissions": ["tabs", "scripting", "activeTab"],
+  "version": "2.0.0",
+  "description": "Enregistre ton écran et partage en un clic, sans ouvrir vitefait.io.",
+  "permissions": ["desktopCapture", "offscreen", "storage", "tabs", "scripting"],
   "host_permissions": ["<all_urls>"],
   "action": {
-    "default_popup": "popup.html",
-    "default_icon": "icon.png"
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {

@@ -5,45 +5,76 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      width: 220px;
+      width: 260px;
       font-family: system-ui, sans-serif;
       background: #0f0f0f;
       color: #fff;
-      padding: 16px;
+      padding: 20px;
     }
-    .logo {
+    .logo { font-size: 13px; font-weight: 700; color: #a78bfa; margin-bottom: 16px; }
+    input {
+      width: 100%;
+      padding: 9px 12px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
       font-size: 13px;
-      font-weight: 700;
-      color: #a78bfa;
-      margin-bottom: 14px;
+      margin-bottom: 8px;
+      outline: none;
     }
+    input:focus { border-color: #7c3aed; }
     button {
       width: 100%;
       padding: 10px;
-      border-radius: 10px;
+      border-radius: 8px;
       border: none;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       transition: opacity 0.15s;
     }
     button:hover { opacity: 0.85; }
-    #btn-start { background: #7c3aed; color: #fff; }
-    #btn-stop  { background: #ef4444; color: #fff; display: none; }
-    #status {
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #btn-login   { background: #7c3aed; color: #fff; }
+    #btn-start   { background: #7c3aed; color: #fff; }
+    #btn-stop    { background: #ef4444; color: #fff; }
+    #btn-logout  { background: transparent; border: 1px solid #333; color: #71717a; margin-top: 8px; font-size: 11px; padding: 6px; }
+    .status {
       margin-top: 10px;
       font-size: 11px;
       color: #71717a;
       text-align: center;
     }
-    #status.error { color: #f87171; }
+    .status.error   { color: #f87171; }
+    .status.success { color: #4ade80; }
+    .user-email { font-size: 11px; color: #52525b; margin-bottom: 12px; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: pulse 1s infinite; margin-right: 6px; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    #screen-login    { display: block; }
+    #screen-recording { display: none; }
   </style>
 </head>
 <body>
   <div class="logo">⬛ vitefait.io</div>
-  <button id="btn-start">● Démarrer l'enregistrement</button>
-  <button id="btn-stop">■ Arrêter l'enregistrement</button>
-  <p id="status">Ouvre vitefait.io pour commencer</p>
-  <script src="popup.js"></script>
+
+  <!-- Écran login -->
+  <div id="screen-login">
+    <input id="email"    type="email"    placeholder="Email" />
+    <input id="password" type="password" placeholder="Mot de passe" />
+    <button id="btn-login">Se connecter</button>
+    <p id="login-status" class="status"></p>
+  </div>
+
+  <!-- Écran enregistrement -->
+  <div id="screen-recording">
+    <p id="user-email" class="user-email"></p>
+    <button id="btn-start">● Démarrer l'enregistrement</button>
+    <button id="btn-stop" style="display:none">■ Arrêter</button>
+    <p id="rec-status" class="status"></p>
+    <button id="btn-logout">Déconnexion</button>
+  </div>
+
+  <script src="popup.js" type="module"></script>
 </body>
 </html>
