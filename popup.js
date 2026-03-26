@@ -39,6 +39,8 @@ btnLogin.addEventListener('click', async () => {
 
   chrome.storage.local.set({ session: data })
   showRecordingScreen(data)
+  // Pré-créer l'offscreen dès la connexion pour qu'il soit prêt
+  chrome.runtime.sendMessage({ type: 'PREPARE_OFFSCREEN' })
 })
 
 // ── Start recording ────────────────────────────────────────────────────────
@@ -65,6 +67,11 @@ btnStop.addEventListener('click', () => {
     if (res?.error) setStatus(recStatus, res.error, 'error')
     else setStatus(recStatus, '✓ Vidéo sauvegardée !', 'success')
   })
+})
+
+// ── Pré-créer l'offscreen si déjà connecté au démarrage ───────────────────
+chrome.storage.local.get(['session'], ({ session }) => {
+  if (session?.access_token) chrome.runtime.sendMessage({ type: 'PREPARE_OFFSCREEN' })
 })
 
 // ── Erreurs depuis background ──────────────────────────────────────────────

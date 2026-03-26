@@ -6,6 +6,9 @@ let recordingStart = null
 let pendingStreamId = null   // streamId en attente que l'offscreen soit prêt
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg.type === 'PREPARE_OFFSCREEN') {
+    ensureOffscreen()
+  }
   if (msg.type === 'START_RECORDING') {
     startRecording(msg.streamId)
   }
@@ -35,11 +38,20 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────
 async function startRecording(streamId) {
-  mouseTrack     = []
-  recordingStart = Date.now()
+  mouseTrack      = []
+  recordingStart  = Date.now()
   pendingStreamId = streamId
-  await ensureOffscreen()
-  // OFFSCREEN_START sera envoyé quand l'offscreen envoie OFFSCREEN_READY
+
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'offscreen.html', reasons: ['USER_MEDIA'], justification: 'Capture écran',
+    })
+    // L'offscreen enverra OFFSCREEN_READY → on lui envoie le streamId là
+  } catch (e) {
+    // Offscreen déjà chargé → envoyer directement
+    chrome.runtime.sendMessage({ type: 'OFFSCREEN_START', streamId })
+    pendingStreamId = null
+  }
 }
 
 // ── Stop ──────────────────────────────────────────────────────────────────
