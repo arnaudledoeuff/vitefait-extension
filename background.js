@@ -1,8 +1,6 @@
 const SUPABASE_URL      = 'https://kdwmnlbttjmfvlbrprxv.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtkd21ubGJ0dGptZnZsYnJwcnh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNTExOTQsImV4cCI6MjA4NjkyNzE5NH0.UXI7d14FIjfNrk5HarzxbOt8mx7Ha9GqQ0oRX6qG6nQ'
 
-let mouseTrack     = []
-let recordingStart = null
 let pendingStreamId = null   // streamId en attente que l'offscreen soit prêt
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -24,22 +22,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
   }
   if (msg.type === 'CAPTURE_ERROR') {
-    // Propager l'erreur au popup
     chrome.runtime.sendMessage({ type: 'SHOW_ERROR', error: msg.error })
-  }
-  if (msg.type === 'MOUSE' && recordingStart !== null) {
-    mouseTrack.push({
-      t: +((Date.now() - recordingStart) / 1000).toFixed(2),
-      x: +Number(msg.x).toFixed(4),
-      y: +Number(msg.y).toFixed(4),
-    })
   }
 })
 
 // ── Start ─────────────────────────────────────────────────────────────────
 async function startRecording(streamId) {
-  mouseTrack      = []
-  recordingStart  = Date.now()
   pendingStreamId = streamId
 
   try {
@@ -97,14 +85,12 @@ async function stopRecording(sendResponse) {
           user_id:     session.user.id,
           title:       `Enregistrement ${new Date().toLocaleString('fr-FR')}`,
           url:         publicUrl,
-          mouse_track: mouseTrack.length > 0 ? mouseTrack : null,
+          mouse_track: null,
           created_at:  new Date().toISOString(),
         }),
       })
       if (!dbRes.ok) throw new Error(`DB échouée (${dbRes.status})`)
 
-      recordingStart = null
-      mouseTrack     = []
       sendResponse({ ok: true })
     } catch (err) {
       sendResponse({ error: err.message })
