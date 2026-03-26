@@ -88,9 +88,22 @@ function stopRecording() {
 }
 
 // ── Upload ─────────────────────────────────────────────────────────────────
+async function refreshSession(s) {
+  const res  = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify({ refresh_token: s.refresh_token }),
+  })
+  if (!res.ok) return s // en cas d'échec, on garde l'ancienne session
+  const fresh = await res.json()
+  chrome.storage.local.set({ session: fresh })
+  return fresh
+}
+
 async function handleStop() {
   const result = await chrome.storage.local.get(['session'])
-  session = result.session
+  if (!result.session?.access_token) { setStatus(recStatus, 'Non connecté', 'error'); return }
+  session = await refreshSession(result.session)
   if (!session?.access_token) { setStatus(recStatus, 'Non connecté', 'error'); return }
 
   try {
