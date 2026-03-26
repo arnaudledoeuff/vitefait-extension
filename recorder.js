@@ -31,7 +31,7 @@ btnStart.addEventListener('click', async () => {
 
     stream.getVideoTracks()[0].onended = () => stopRecording()
 
-    chrome.runtime.sendMessage({ type: 'RECORDING_STARTED' })
+    chrome.runtime.sendMessage({ type: 'RECORDING_STARTED', startTime: Date.now() })
 
     btnStart.style.display = 'none'
     btnStop.style.display  = 'block'
@@ -59,6 +59,11 @@ async function handleStop() {
   if (!result.session?.access_token) { setStatus('Non connecté', 'error'); return }
 
   const session = await refreshSession(result.session)
+
+  // Récupérer les formules capturées depuis le background
+  const { events: formulaEvents } = await new Promise(resolve =>
+    chrome.runtime.sendMessage({ type: 'GET_FORMULA_EVENTS' }, resolve)
+  )
 
   try {
     const blob     = new Blob(chunks, { type: 'video/webm' })
@@ -93,10 +98,11 @@ async function handleStop() {
         Prefer:          'return=minimal',
       },
       body: JSON.stringify({
-        user_id:    session.user.id,
-        title:      `Enregistrement ${new Date().toLocaleString('fr-FR')}`,
-        url:        publicUrl,
-        created_at: new Date().toISOString(),
+        user_id:        session.user.id,
+        title:          `Enregistrement ${new Date().toLocaleString('fr-FR')}`,
+        url:            publicUrl,
+        formula_events: formulaEvents?.length > 0 ? formulaEvents : null,
+        created_at:     new Date().toISOString(),
       }),
     })
     if (!dbRes.ok) throw new Error(`DB échouée (${dbRes.status})`)
