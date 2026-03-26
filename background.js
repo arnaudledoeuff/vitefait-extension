@@ -7,8 +7,7 @@ let recordingStart = null
 // ── Messages depuis popup et offscreen ────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'START_RECORDING') {
-    startRecording(sendResponse)
-    return true
+    startRecording(msg.streamId)
   }
   if (msg.type === 'STOP_RECORDING') {
     stopRecording(sendResponse)
@@ -24,20 +23,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 })
 
 // ── Start ─────────────────────────────────────────────────────────────────
-function startRecording(sendResponse) {
-  chrome.desktopCapture.chooseDesktopMedia(
-    ['screen', 'window', 'tab'],
-    async (streamId) => {
-      if (!streamId) { sendResponse({ error: 'Capture annulée' }); return }
-
-      mouseTrack     = []
-      recordingStart = Date.now()
-
-      await ensureOffscreen()
-      chrome.runtime.sendMessage({ type: 'OFFSCREEN_START', streamId })
-      sendResponse({ ok: true })
-    }
-  )
+async function startRecording(streamId) {
+  mouseTrack     = []
+  recordingStart = Date.now()
+  await ensureOffscreen()
+  chrome.runtime.sendMessage({ type: 'OFFSCREEN_START', streamId })
 }
 
 // ── Stop ──────────────────────────────────────────────────────────────────

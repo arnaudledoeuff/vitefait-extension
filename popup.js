@@ -43,17 +43,14 @@ btnLogin.addEventListener('click', async () => {
 
 // ── Start recording ────────────────────────────────────────────────────────
 btnStart.addEventListener('click', () => {
-  btnStart.style.display = 'none'
-  btnStop.style.display  = 'block'
   setStatus(recStatus, 'Sélectionne une fenêtre…')
-  chrome.runtime.sendMessage({ type: 'START_RECORDING' }, (res) => {
-    if (res?.error) {
-      setStatus(recStatus, res.error, 'error')
-      btnStart.style.display = 'block'
-      btnStop.style.display  = 'none'
-    } else {
-      setStatus(recStatus, '<span class="dot"></span> En cours…')
-    }
+  // chooseDesktopMedia doit être appelé depuis le popup, pas le service worker
+  chrome.desktopCapture.chooseDesktopMedia(['screen', 'window', 'tab'], (streamId) => {
+    if (!streamId) { setStatus(recStatus, 'Capture annulée'); return }
+    btnStart.style.display = 'none'
+    btnStop.style.display  = 'block'
+    setStatus(recStatus, '⬤ En cours…')
+    chrome.runtime.sendMessage({ type: 'START_RECORDING', streamId })
   })
 })
 
