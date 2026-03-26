@@ -27,7 +27,10 @@ async function startRecording(streamId) {
   mouseTrack     = []
   recordingStart = Date.now()
   await ensureOffscreen()
-  chrome.runtime.sendMessage({ type: 'OFFSCREEN_START', streamId })
+  // Attendre que l'offscreen soit prêt avant d'envoyer le streamId
+  setTimeout(() => {
+    chrome.runtime.sendMessage({ type: 'OFFSCREEN_START', streamId })
+  }, 500)
 }
 
 // ── Stop ──────────────────────────────────────────────────────────────────
@@ -37,11 +40,11 @@ async function stopRecording(sendResponse) {
   if (!session?.access_token) { sendResponse({ error: 'Non connecté' }); return }
 
   chrome.runtime.sendMessage({ type: 'OFFSCREEN_STOP' }, async (res) => {
-    if (chrome.runtime.lastError || !res?.chunks) {
+    if (chrome.runtime.lastError || !res?.buffer) {
       sendResponse({ error: 'Pas de données vidéo' }); return
     }
     try {
-      const blob     = new Blob(res.chunks, { type: 'video/webm' })
+      const blob     = new Blob([new Uint8Array(res.buffer)], { type: 'video/webm' })
       const ts       = Date.now()
       const fileName = `${session.user.id}/${ts}.webm`
 
