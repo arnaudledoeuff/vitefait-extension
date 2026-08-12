@@ -1,7 +1,7 @@
 let overlayEl = null
 
 // ── Créer le widget flottant ───────────────────────────────────────────────
-function showOverlay() {
+function showOverlay(startTime) {
   if (overlayEl) return
 
   overlayEl = document.createElement('div')
@@ -79,16 +79,17 @@ function showOverlay() {
   `
   document.body.appendChild(overlayEl)
 
-  // Timer
-  let seconds = 0
+  // Timer — basé sur l'heure de début réelle pour rester juste après un changement d'onglet
+  const start   = startTime || Date.now()
   const timerEl = document.getElementById('vf-timer')
-  const interval = setInterval(() => {
-    seconds++
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0')
-    const s = (seconds % 60).toString().padStart(2, '0')
+  const tick = () => {
+    const elapsed = Math.max(0, Math.floor((Date.now() - start) / 1000))
+    const m = Math.floor(elapsed / 60).toString().padStart(2, '0')
+    const s = (elapsed % 60).toString().padStart(2, '0')
     if (timerEl) timerEl.textContent = `${m}:${s}`
-  }, 1000)
-  overlayEl._interval = interval
+  }
+  tick()
+  overlayEl._interval = setInterval(tick, 1000)
 
   // Stop
   document.getElementById('vf-stop').addEventListener('click', () => {
@@ -111,11 +112,11 @@ function hideOverlay() {
 
 // ── Écoute les messages du background ─────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === 'SHOW_OVERLAY') showOverlay()
+  if (msg.type === 'SHOW_OVERLAY') showOverlay(msg.startTime)
   if (msg.type === 'HIDE_OVERLAY') hideOverlay()
 })
 
 // ── Au chargement : vérifier si enregistrement en cours ───────────────────
-chrome.storage.local.get(['isRecording'], ({ isRecording }) => {
-  if (isRecording) showOverlay()
+chrome.storage.local.get(['isRecording', 'recordingStartTime'], ({ isRecording, recordingStartTime }) => {
+  if (isRecording) showOverlay(recordingStartTime)
 })

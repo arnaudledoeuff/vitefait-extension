@@ -44,14 +44,15 @@ btnLogin.addEventListener('click', async () => {
 })
 
 // ── Start ──────────────────────────────────────────────────────────────────
-btnStart.addEventListener('click', () => {
-  chrome.windows.create({
+btnStart.addEventListener('click', async () => {
+  const win = await chrome.windows.create({
     url:    chrome.runtime.getURL('recorder.html'),
     type:   'popup',
     width:  300,
     height: 150,
     state:  'normal',
   })
+  chrome.storage.local.set({ recorderWindowId: win.id })
 })
 
 // ── Stop depuis n'importe quel onglet ──────────────────────────────────────

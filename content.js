@@ -1,7 +1,5 @@
 // ── Capture des formules Google Sheets ────────────────────────────────────
-// Injecté uniquement sur sheets.google.com (voir manifest)
-
-if (!location.hostname.includes('docs.google.com')) return // garde extra
+// Injecté uniquement sur docs.google.com/spreadsheets (voir manifest)
 
 // Sélecteurs de la barre de formule — Google peut les changer, on teste en cascade
 const FORMULA_SELECTORS = [
