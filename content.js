@@ -58,18 +58,18 @@ function onFormulaChange() {
   } catch (_) {}
 }
 
-// ── Attendre que Sheets soit chargé (SPA) ─────────────────────────────────
+// ── Capture au clic uniquement ────────────────────────────────────────────
+// Volontairement pas de MutationObserver/keyup : on ne veut pas capturer
+// chaque frappe pendant la saisie, seulement l'état de la formule au moment
+// où l'utilisateur clique sur une cellule (plus simple à suivre en démo).
 function attachObserver() {
   const bar = getFormulaBar()
   if (!bar) return false
 
-  // MutationObserver sur la barre de formule (contenteditable ou input)
-  const obs = new MutationObserver(onFormulaChange)
-  obs.observe(bar, { characterData: true, childList: true, subtree: true })
-
-  // Fallback : événements clavier/souris sur le document (changement de cellule)
-  document.addEventListener('keyup',   onFormulaChange, { passive: true })
-  document.addEventListener('mouseup', onFormulaChange, { passive: true })
+  document.addEventListener('click', () => {
+    // Léger délai : Sheets met à jour la barre de formule juste après le clic
+    setTimeout(onFormulaChange, 50)
+  }, { passive: true })
 
   return true
 }
