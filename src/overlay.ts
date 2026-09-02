@@ -1,7 +1,10 @@
-let overlayEl = null
+// Types (ExtMessage, StorageShape) : ambiants via src/types.d.ts (content script)
+
+let overlayEl: HTMLDivElement | null = null
+let overlayInterval: ReturnType<typeof setInterval> | undefined
 
 // ── Créer le widget flottant ───────────────────────────────────────────────
-function showOverlay(startTime) {
+function showOverlay(startTime?: number): void {
   if (overlayEl) return
 
   overlayEl = document.createElement('div')
@@ -80,7 +83,7 @@ function showOverlay(startTime) {
   document.body.appendChild(overlayEl)
 
   // Timer — basé sur l'heure de début réelle pour rester juste après un changement d'onglet
-  const start   = startTime || Date.now()
+  const start = startTime ?? Date.now()
   const timerEl = document.getElementById('vf-timer')
   const tick = () => {
     const elapsed = Math.max(0, Math.floor((Date.now() - start) / 1000))
@@ -89,34 +92,35 @@ function showOverlay(startTime) {
     if (timerEl) timerEl.textContent = `${m}:${s}`
   }
   tick()
-  overlayEl._interval = setInterval(tick, 1000)
+  overlayInterval = setInterval(tick, 1000)
 
   // Stop
-  document.getElementById('vf-stop').addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'STOP_FROM_POPUP' })
+  document.getElementById('vf-stop')?.addEventListener('click', () => {
+    void chrome.runtime.sendMessage({ type: 'STOP_FROM_POPUP' } satisfies ExtMessage)
     hideOverlay()
   })
 
   // Masquer (juste cacher visuellement)
-  document.getElementById('vf-hide').addEventListener('click', () => {
-    overlayEl.style.display = 'none'
+  document.getElementById('vf-hide')?.addEventListener('click', () => {
+    if (overlayEl) overlayEl.style.display = 'none'
   })
 }
 
-function hideOverlay() {
+function hideOverlay(): void {
   if (!overlayEl) return
-  clearInterval(overlayEl._interval)
+  clearInterval(overlayInterval)
+  overlayInterval = undefined
   overlayEl.remove()
   overlayEl = null
 }
 
 // ── Écoute les messages du background ─────────────────────────────────────
-chrome.runtime.onMessage.addListener((msg) => {
+chrome.runtime.onMessage.addListener((msg: ExtMessage) => {
   if (msg.type === 'SHOW_OVERLAY') showOverlay(msg.startTime)
   if (msg.type === 'HIDE_OVERLAY') hideOverlay()
 })
 
 // ── Au chargement : vérifier si enregistrement en cours ───────────────────
-chrome.storage.local.get(['isRecording', 'recordingStartTime'], ({ isRecording, recordingStartTime }) => {
-  if (isRecording) showOverlay(recordingStartTime)
+void chrome.storage.local.get(['isRecording', 'recordingStartTime']).then((stored: StorageShape) => {
+  if (stored.isRecording) showOverlay(stored.recordingStartTime ?? undefined)
 })

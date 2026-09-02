@@ -1,0 +1,17 @@
+{
+  "name": "vitefait-extension",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Extension Chrome vitefait.io — enregistreur d'écran",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc && node scripts/copy-assets.mjs",
+    "watch": "node scripts/watch.mjs",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "typescript": "~5.9"
+  }
+}
