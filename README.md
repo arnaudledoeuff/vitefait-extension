@@ -11,10 +11,22 @@ npm install
 npm run build      # compile src/*.ts -> dist/*.js + copie manifest/HTML
 npm run watch      # recompile à chaque changement
 npm run typecheck  # vérifie les types sans générer de fichiers
+npm run package    # build + zippe dist/ -> release/vitefait-extension-vX.Y.Z.zip
+                    # (nécessite python3, présent par défaut sur la plupart des systèmes)
 ```
+
+### Publier une nouvelle version pour téléchargement
+
+1. Bump `version` dans `manifest.json`
+2. `npm run package`
+3. Créer une [Release GitHub](https://github.com/arnaudledoeuff/vitefait-extension/releases/new), tag `vX.Y.Z`, et y attacher `release/vitefait-extension-vX.Y.Z.zip`
+4. Mettre à jour le lien de téléchargement sur la landing page (`vitefait-io`)
 
 ## Installation dans Chrome
 
+**Sans cloner le repo** : télécharge le zip depuis la [dernière release](https://github.com/arnaudledoeuff/vitefait-extension/releases/latest), dézippe-le, puis suis les étapes 2-4 ci-dessous en sélectionnant le dossier dézippé à l'étape 4. C'est le chemin suivi par le bouton de téléchargement sur la landing page.
+
+**En développement** :
 1. `npm install && npm run build`
 2. Ouvre `chrome://extensions`
 3. Active le **Mode développeur** (en haut à droite)

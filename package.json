@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc && node scripts/copy-assets.mjs",
     "watch": "node scripts/watch.mjs",
+    "package": "npm run build && python3 scripts/zip_dist.py",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "devDependencies": {
